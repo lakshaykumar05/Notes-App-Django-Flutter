@@ -1,8 +1,15 @@
 # from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import NoteSerializer
+from .serializers import NoteSerializer,UserSerializer
 from .models import Note
+from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import User
+
+# from rest_framework.authentication import TokenAuthentication
+# from rest_framework.permissions import IsAuthenticated
+
 
 
 @api_view(['GET'])
@@ -43,9 +50,31 @@ def getRoutes(request):
     return Response(routes)
 
 
+class RegisterUser(APIView):
+
+    def post(self, request):
+
+        serializer = UserSerializer(data = request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+
+            user = User.objects.get(username = serializer.data['username'])
+
+            token_obj, _ = Token.objects.get_or_create(user = user)
+
+            return Response({'payload' : serializer.data, 'token' : str(token_obj), 'message' : 'User has been registered'})
+
+    
+        return Response({'errors' : serializer.errors, 'message' : "User's information not correct"})
+
+
+
 # get all notes
+
 @api_view(['GET'])
 def getNotes(request):
+
     notes = Note.objects.all()
     serializer = NoteSerializer(notes, many=True)
 
